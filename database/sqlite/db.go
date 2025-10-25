@@ -4,7 +4,6 @@ package sqlite
 import (
 	"database/sql"
 	"embed"
-	"log"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -24,11 +23,6 @@ func (db *database) Conn() *sql.DB {
 }
 
 func Open(url string) (*database, error) {
-	_, err := os.Stat(url)
-	if err != nil {
-		return nil, err
-	}
-	log.Println("creating db file at", url)
 	file, err := os.OpenFile(url, os.O_CREATE, 0744)
 	if err != nil {
 		return nil, err
