@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"os"
+	"path/filepath"
 
 	"github.com/golang-migrate/migrate/v4"
 	migratesql "github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -23,6 +24,9 @@ func (db *database) Conn() *sql.DB {
 }
 
 func Open(url string) (*database, error) {
+	if err := os.MkdirAll(filepath.Dir(url), 0744); err != nil {
+		return nil, err
+	}
 	file, err := os.OpenFile(url, os.O_CREATE, 0744)
 	if err != nil {
 		return nil, err
