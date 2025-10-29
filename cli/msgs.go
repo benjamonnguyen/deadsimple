@@ -1,4 +1,6 @@
-package main
+package cli
+
+import "context"
 
 type InputMsg struct {
 	Input string
@@ -6,6 +8,6 @@ type InputMsg struct {
 
 type QuitMsg struct{}
 
-func Quit() Msg {
+func Quit(_ context.Context) Msg {
 	return QuitMsg{}
 }
