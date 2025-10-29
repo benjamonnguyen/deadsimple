@@ -9,37 +9,46 @@ import (
 )
 
 type App struct {
-	m      Model
-	msgs   chan Msg
-	cmds   chan Cmd
-	errs   chan error
-	ctx    context.Context
-	cancel context.CancelFunc
+	m       Model
+	msgs    chan Msg
+	cmds    chan Cmd
+	errs    chan error
+	ctx     context.Context
+	cancel  context.CancelFunc
+	options []option
 }
 
 type Model interface {
+	Init() Cmd
 	Update(Msg) (Model, Cmd)
 }
 
 type Msg any
 
-type Cmd func() Msg
+type Cmd func(context.Context) Msg
 
-func NewApp(m Model) *App {
+func NewApp(m Model, opts ...option) *App {
 	return &App{
-		m:    m,
-		msgs: make(chan Msg, 10),
-		cmds: make(chan Cmd),
-		errs: make(chan error),
+		m:       m,
+		msgs:    make(chan Msg, 10),
+		cmds:    make(chan Cmd),
+		errs:    make(chan error),
+		ctx:     context.Background(),
+		options: opts,
 	}
 }
 
 func (a *App) Run() error {
-	a.ctx, a.cancel = context.WithCancel(context.Background())
+	for _, opt := range a.options {
+		opt(a)
+	}
+	a.ctx, a.cancel = context.WithCancel(a.ctx)
 
 	go a.handleSignals()
 	go a.userInputLoop()
 	go a.commandLoop()
+
+	a.cmds <- a.m.Init()
 
 	err := a.eventLoop()
 	// TODO teardown
@@ -81,7 +90,7 @@ func (a *App) commandLoop() {
 				continue
 			}
 			go func() {
-				a.msgs <- cmd()
+				a.msgs <- cmd(a.ctx)
 			}()
 		}
 	}
@@ -95,6 +104,9 @@ func (a *App) eventLoop() error {
 		case <-a.ctx.Done():
 			return nil
 		case msg := <-a.msgs:
+			if msg == nil {
+				continue
+			}
 			switch msg.(type) {
 			case QuitMsg:
 				a.cancel()
@@ -105,9 +117,3 @@ func (a *App) eventLoop() error {
 		}
 	}
 }
-
-type InputMsg struct {
-	Input string
-}
-
-type QuitMsg struct{}
