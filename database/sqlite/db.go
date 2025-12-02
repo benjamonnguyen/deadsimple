@@ -14,16 +14,22 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type database struct {
+type Connection interface {
+	DB() *sql.DB
+	RunMigrations(embed.FS) error
+	Close() error
+}
+
+type conn struct {
 	// TODO bring your own logger
-	conn *sql.DB
+	db *sql.DB
 }
 
-func (db *database) Conn() *sql.DB {
-	return db.conn
+func (conn *conn) DB() *sql.DB {
+	return conn.db
 }
 
-func Open(url string) (*database, error) {
+func Open(url string) (Connection, error) {
 	if err := os.MkdirAll(filepath.Dir(url), 0744); err != nil {
 		return nil, err
 	}
@@ -33,18 +39,18 @@ func Open(url string) (*database, error) {
 	}
 	file.Close()
 
-	conn, err := sql.Open("sqlite", url)
+	db, err := sql.Open("sqlite", url)
 	if err != nil {
 		return nil, err
 	}
-	return &database{
-		conn: conn,
+	return &conn{
+		db: db,
 	}, nil
 }
 
 // RunMigrations expects an embedded folder of sql files
-func (db *database) RunMigrations(migrations embed.FS) error {
-	d, err := migratesql.WithInstance(db.conn, &migratesql.Config{})
+func (conn *conn) RunMigrations(migrations embed.FS) error {
+	d, err := migratesql.WithInstance(conn.db, &migratesql.Config{})
 	if err != nil {
 		return err
 	}
@@ -64,6 +70,6 @@ func (db *database) RunMigrations(migrations embed.FS) error {
 	return nil
 }
 
-func (db *database) Close() error {
-	return db.conn.Close()
+func (conn *conn) Close() error {
+	return conn.db.Close()
 }
