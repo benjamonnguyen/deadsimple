@@ -1,5 +1,5 @@
-// Package config provides a dead simple interface to load configurations
-package config
+// Package cfg provides a deadsimple interface to load configurations
+package cfg
 
 import "errors"
 

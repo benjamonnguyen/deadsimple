@@ -1,4 +1,4 @@
-// Package sqlite
+// Package sqlite provides a deadsimple sqlite database connection with migrations
 package sqlite
 
 import (
@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	ds "github.com/benjamonnguyen/deadsimple"
+	"github.com/charmbracelet/log"
 	"github.com/golang-migrate/migrate/v4"
 	migratesql "github.com/golang-migrate/migrate/v4/database/sqlite"
 
@@ -18,11 +20,12 @@ type Connection interface {
 	DB() *sql.DB
 	RunMigrations(embed.FS) error
 	Close() error
+	SetLogger(ds.Logger)
 }
 
 type conn struct {
-	// TODO bring your own logger
-	db *sql.DB
+	log ds.Logger
+	db  *sql.DB
 }
 
 func (conn *conn) DB() *sql.DB {
@@ -30,10 +33,10 @@ func (conn *conn) DB() *sql.DB {
 }
 
 func Open(url string) (Connection, error) {
-	if err := os.MkdirAll(filepath.Dir(url), 0744); err != nil {
+	if err := os.MkdirAll(filepath.Dir(url), 0o744); err != nil {
 		return nil, err
 	}
-	file, err := os.OpenFile(url, os.O_CREATE, 0744)
+	file, err := os.OpenFile(url, os.O_CREATE, 0o744)
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +47,13 @@ func Open(url string) (Connection, error) {
 		return nil, err
 	}
 	return &conn{
-		db: db,
+		db:  db,
+		log: log.Default(),
 	}, nil
+}
+
+func (conn *conn) SetLogger(l ds.Logger) {
+	conn.log = l
 }
 
 // RunMigrations expects an embedded folder of sql files

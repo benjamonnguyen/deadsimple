@@ -1,4 +1,4 @@
-// Package env provides a dead simple interface to load environment variables
+// Package env provides a deadsimple interface to load environment variables
 package env
 
 import (
@@ -6,19 +6,19 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/benjamonnguyen/deadsimple/config"
+	"github.com/benjamonnguyen/deadsimple/cfg"
 	"github.com/joho/godotenv"
 )
 
 type Entry struct {
-	Key     config.Key
+	Key     cfg.Key
 	Default string
 	// Required is ignored if Default is provided
 	Required bool
 }
 
-func NewConfig(src string, entries ...Entry) (config.Config, error) {
-	kvs := make(map[config.Key]string)
+func NewConfig(src string, entries ...Entry) (cfg.Config, error) {
+	kvs := make(map[cfg.Key]string)
 
 	var fromSrc map[string]string
 	if src != "" {
@@ -47,27 +47,27 @@ func NewConfig(src string, entries ...Entry) (config.Config, error) {
 
 		// Check if required field is missing
 		if entry.Required && value == "" {
-			return nil, fmt.Errorf("key: %s: %w", entry.Key, config.ErrMissingRequired)
+			return nil, fmt.Errorf("key: %s: %w", entry.Key, cfg.ErrMissingRequired)
 		}
 
 		kvs[entry.Key] = value
 	}
 
-	return &cfg{kvs: kvs}, nil
+	return &config{kvs: kvs}, nil
 }
 
-type cfg struct {
-	kvs map[config.Key]string
+type config struct {
+	kvs map[cfg.Key]string
 }
 
-func (c *cfg) Get(k config.Key, v any) error {
+func (c *config) Get(k cfg.Key, v any) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer {
-		return fmt.Errorf("expected string pointer: %w", config.ErrInvalidArg)
+		return fmt.Errorf("expected string pointer: %w", cfg.ErrInvalidArg)
 	}
 
 	if rv.Elem().Kind() != reflect.String {
-		return fmt.Errorf("expected string pointer: %w", config.ErrInvalidArg)
+		return fmt.Errorf("expected string pointer: %w", cfg.ErrInvalidArg)
 	}
 
 	val, ok := c.kvs[k]
@@ -79,9 +79,9 @@ func (c *cfg) Get(k config.Key, v any) error {
 	return nil
 }
 
-func (c *cfg) GetMany(ks []config.Key, vs ...any) error {
+func (c *config) GetMany(ks []cfg.Key, vs ...any) error {
 	if len(ks) != len(vs) {
-		return fmt.Errorf("provide string pointer for each key: %w", config.ErrInvalidArg)
+		return fmt.Errorf("provide string pointer for each key: %w", cfg.ErrInvalidArg)
 	}
 
 	for i, v := range vs {

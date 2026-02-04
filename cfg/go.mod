@@ -1,4 +1,4 @@
-module github.com/benjamonnguyen/deadsimple/config
+module github.com/benjamonnguyen/deadsimple/cfg
 
 go 1.25.1
 
